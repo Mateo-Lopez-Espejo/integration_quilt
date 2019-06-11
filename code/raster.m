@@ -31,11 +31,14 @@ if I.single_unit
     % raster for all units
     raster = nan(n_bins, n_trials, 100);
     X = load([recording_directory '/sorted/' recording_id '.spk.mat']);
+    if isfield(X, 'rate') && ~isempty(X.rate)% MLE. Whis is this value coming from outside?
+        I.spike_sr = X.rate; 
+    end
     n_electrodes = length(X.sortinfo);
     n_units = 0;
     for elec = 1:n_electrodes
         if ~isempty(X.sortinfo{elec})
-            for j = 2:length(X.sortinfo{elec}{1})
+            for j = 1:length(X.sortinfo{elec}{1}) % index from the first cell, not the second. MLE
                 spike_data = X.sortinfo{elec}{1}(j).unitSpikes;
                 n_units = n_units + 1;
                 for i = 1:n_trials
