@@ -4,27 +4,30 @@
 
 % paths to external code repositories
 
-root_directory = '/home/mateo/Sam Analysis'; % MLE  
+root_directory = '/auto/users/mateo/Sam Analysis'; % MLE  
 addpath(genpath([root_directory '/general-analysis-code']));
 addpath(genpath([root_directory '/export_fig_v3']));
 project_directory = [root_directory '/scrambling-ferrets'];
 
 if exist([project_directory '/data'], 'dir')
-    data_directory = [project_directory '/data'];
-elseif exist('/auto/data', 'dir')
-    data_directory = root_directory; % MLE
+    %data_directory = [project_directory '/data']; % SNH
+elseif exist('/auto/data/daq', 'dir')
+    data_directory = '/auto/data/daq';
     %data_directory = '/auto/data'; % SNH
 else
-    data_directory = '/Volumes/data';
+    %data_directory = '/Volumes/data'; % SNH
 end
 
 single_unit = true;
-mateo = true;
+lbhb = true;
 overwrite = false;
+plot_figure = false;
 
 if single_unit
-    if mateo
-        recording_ids = {'AMT032a11_p_NTI'}; % MLE LBHB example
+    if lbhb
+        recording_ids = {'AMT028b05_p_NTI', 'AMT031a13_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
+        %recording_ids = {'AMT031a13_p_NTI', 'AMT032a11_p_NTI'};
+        %recording_ids = {'AMT032a11_p_NTI'};
     else 
         recording_ids = {'tomette002a10_p_NSD'};
     end
@@ -44,12 +47,17 @@ else
     %    }; % SHN
 end
 
+% asigns full animal name to the animal code 
+animal_codes.AMT = 'Amanita';
 
 recording_directories = cell(1, length(recording_ids));
 
 for i = 1:length(recording_ids)
-    if mateo
-        recording_directories{i} = [data_directory '/Amanita/' recording_ids{i}(1:6)];
+    a_code = recording_ids{i}(1:3);
+    if lbhb
+        recording_directories{i} = [data_directory '/'...
+                                    animal_codes.(a_code) '/' ...
+                                    recording_ids{i}(1:6)];
     else
         recording_directories{i} = [data_directory '/Tomette/' recording_ids{i}(1:10)];
     end
@@ -95,12 +103,14 @@ end
 
 %% Histogram of test-retest reliability
 
-rvec = cat(2, rall{:});
-hist(rvec);
-xlabel('test-retest reliability');
-ylabel('number of single units');
-%export_fig([figure_directory '/hist-allunits-singleunit' num2str(single_unit) '.pdf']);
-
+if plot_figure
+    rvec = cat(2, rall{:});
+    hist(rvec);
+    xlabel('test-retest reliability');
+    ylabel('number of single units');
+    export_fig([figure_directory '/hist-allunits-singleunit' num2str(single_unit) '.pdf']);
+end
+    
 %% Lag analysis
 
 clc;
@@ -117,5 +127,6 @@ for i = 1:length(recording_ids)
         'fwhm_ms', 10, ...
         'single_unit', single_unit, ...
         'units', find(r>0.1),...
-        'overwrite', overwrite);
+        'overwrite', overwrite, ...
+        'plot_figure', plot_figure);
 end

@@ -15,11 +15,17 @@ I.single_unit = false;
 I = parse_optInputs_keyvalue(varargin, I);
 
 % determine number of trials
-elec = 1;
-load([recording_directory '/tmp/' recording_id '.001.1.elec' ...
-    num2str(elec) '.sig' num2str(I.spike_thresh) '.NOCOM.mat'], ...
-    'trialid', 'spikebin');
-n_trials = max(trialid);
+if I.single_unit
+    n_trials = load([recording_directory '/sorted/' recording_id '.spk.mat'],...
+                    'nrec');
+    n_trials = n_trials.nrec;
+else
+    elec = 1;
+    load([recording_directory '/tmp/' recording_id '.001.1.elec' ...
+        num2str(elec) '.sig' num2str(I.spike_thresh) '.NOCOM.mat'], ...
+        'trialid', 'spikebin');
+    n_trials = max(trialid);
+end
 
 % count number of units
 tbins = win(1) : 1/I.raster_sr : win(2);
