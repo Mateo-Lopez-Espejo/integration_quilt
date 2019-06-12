@@ -19,7 +19,8 @@ else
 end
 
 single_unit = true;
-mateo = false;
+mateo = true;
+overwrite = false;
 
 if single_unit
     if mateo
@@ -116,5 +117,5 @@ for i = 1:length(recording_ids)
         'fwhm_ms', 10, ...
         'single_unit', single_unit, ...
         'units', find(r>0.1),...
-        'overwrite', true);
+        'overwrite', overwrite);
 end

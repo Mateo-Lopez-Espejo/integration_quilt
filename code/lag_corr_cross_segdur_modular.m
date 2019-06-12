@@ -464,14 +464,20 @@ if I.plot_figure
                 legend('Same', 'Diff', 'Diff (Control)');
             end
         end
-        
+       
         if strcmp(L.chnames{chan}, ['ch' num2str(chan)])
+            chname = L.chnames{chan};
+        elseif ~isempty(regexp(L.chnames{chan}, '[a-zA-Z]{3}\d{3}[a-z]-\d{2}-\d', 'ONCE')) % lbhb name
             chname = L.chnames{chan};
         else
             chname = ['ch' num2str(chan) '-' L.chnames{chan}];
         end
-        export_fig(mkpdir([L.figure_directory '/' chname ...
-            '-win' num2str(I.plot_win(1)) '-' num2str(I.plot_win(2)) ...
-            '-range' num2str(corr_range(1), '%.2f') '-' num2str(corr_range(2), '%.2f') '.pdf']), '-pdf', '-transparent');
+        
+        filename = mkpdir([L.figure_directory '/' chname ...
+        '-win' num2str(I.plot_win(1)) '-' num2str(I.plot_win(2)) ...
+        '-range' num2str(corr_range(1), '%.2f') '-' num2str(corr_range(2), '%.2f') '.pdf']);    
+
+        export_fig(filename, '-pdf', '-transparent');
+        
     end
 end

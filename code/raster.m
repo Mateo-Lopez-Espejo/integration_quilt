@@ -38,12 +38,16 @@ if I.single_unit
     n_units = 0;
     for elec = 1:n_electrodes
         if ~isempty(X.sortinfo{elec})
-            for j = 1:length(X.sortinfo{elec}{1}) % index from the first cell, not the second. MLE
-                spike_data = X.sortinfo{elec}{1}(j).unitSpikes;
-                n_units = n_units + 1;
-                for i = 1:n_trials
-                    spike_times = spike_data(2, spike_data(1, :)==i) / I.spike_sr;
-                    raster(:, i, n_units) = myhist(spike_times, tbins);
+            for j = 1:length(X.sortinfo{elec}{1})
+                % lbhb compatibility with sorted spikes data structures.
+                % skips over empty units. MLE 2019 06 11
+                if ~isempty(X.sortinfo{elec}{1}(j).unitSpikes)
+                    spike_data = X.sortinfo{elec}{1}(j).unitSpikes;
+                    n_units = n_units + 1;
+                    for i = 1:n_trials
+                        spike_times = spike_data(2, spike_data(1, :)==i) / I.spike_sr;
+                        raster(:, i, n_units) = myhist(spike_times, tbins);
+                    end
                 end
             end
         end

@@ -286,6 +286,8 @@ if I.plot_figure
         
         if strcmp(L.chnames{chan}, ['ch' num2str(chan)])
             chname = L.chnames{chan};
+        elseif ~isempty(regexp(L.chnames{chan}, '[a-zA-Z]{3}\d{3}[a-z]-\d{2}-\d', 'ONCE')) % lbhb name
+            chname = L.chnames{chan};
         else
             chname = ['ch' num2str(chan) '-' L.chnames{chan}];
         end

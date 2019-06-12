@@ -78,6 +78,9 @@ for i=1:n_units
     end
 end
 
+% LBHB cell names, MLE 2019 06 11
+chnames = lbhb_cell_name(recording_directory, recording_id);
+
 %% Separate out repetitions into a separate dimension
 
 n_conditions = T.n_seg * T.n_orders * T.n_stims;
