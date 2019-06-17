@@ -263,13 +263,13 @@ if ~exist(MAT_file, 'file') || I.overwrite
     end
     
     M.channels = L.channels;
+    M.chnames = L.chnames;
+    M.sr = L.sr;
     
     save(MAT_file, 'M', '-v7.3');
     
 else
-    
     load(MAT_file, 'M')
-    
 end
 
 %% Plot the results

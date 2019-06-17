@@ -22,7 +22,7 @@ if I.single_unit
 else
     elec = 1;
     load([recording_directory '/tmp/' recording_id '.001.1.elec' ...
-        num2str(elec) '.sig' num2str(I.spike_thresh) '.NOCOM.mat'], ...
+        num2str(elec) '.sig' num2str(I.spike_thresh) '.mat'], ...
         'trialid', 'spikebin');
     n_trials = max(trialid);
 end
@@ -67,7 +67,7 @@ else
     while 1
         elec = elec+1;
         fname = [recording_directory '/tmp/' recording_id '.001.1.elec' ...
-            num2str(elec) '.sig' num2str(I.spike_thresh) '.NOCOM.mat'];
+            num2str(elec) '.sig' num2str(I.spike_thresh) '.mat'];
         if ~exist(fname,'file')
             n_electrodes = elec-1;
             break;
@@ -82,7 +82,7 @@ else
     raster = nan(n_bins, n_trials, n_electrodes);
     for elec = 1:n_electrodes
         load([recording_directory '/tmp/' recording_id '.001.1.elec' ...
-            num2str(elec) '.sig' num2str(I.spike_thresh) '.NOCOM.mat'], ...
+            num2str(elec) '.sig' num2str(I.spike_thresh) '.mat'], ...
             'trialid', 'spikebin');
         for i = 1:n_trials
             spike_times = spikebin(trialid == i)/I.spike_sr;

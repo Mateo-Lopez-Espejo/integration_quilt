@@ -69,19 +69,18 @@ if isempty(I.units)
     I.units = 1:n_units;
 end
 
-% channel names
-chnames = cell(1, n_units);
-for i=1:n_units
-    if I.single_unit
-        chnames{i} = ['su' num2str(i)];
-    else
+% LBHB cell names, MLE 2019 06 11
+if I.single_unit
+    % LBHB cell names, MLE 2019 06 11
+    chnames = lbhb_cell_name(recording_directory, recording_id);
+else
+    chnames = cell(1, n_units);
+    for i=1:n_units
         chnames{i} = ['elec' num2str(i)];
     end
 end
-
-% LBHB cell names, MLE 2019 06 11
-chnames = lbhb_cell_name(recording_directory, recording_id);
-
+ 
+    
 %% Separate out repetitions into a separate dimension
 
 n_conditions = T.n_seg * T.n_orders * T.n_stims;

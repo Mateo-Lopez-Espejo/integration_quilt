@@ -7,6 +7,7 @@
 root_directory = '/auto/users/mateo/Sam Analysis'; % MLE  
 addpath(genpath([root_directory '/general-analysis-code']));
 addpath(genpath([root_directory '/export_fig_v3']));
+addpath(genpath([root_directory '/helper-functions']));
 project_directory = [root_directory '/scrambling-ferrets'];
 
 if exist([project_directory '/data'], 'dir')
@@ -18,16 +19,14 @@ else
     %data_directory = '/Volumes/data'; % SNH
 end
 
-single_unit = true;
+single_unit = false;
 lbhb = true;
 overwrite = false;
 plot_figure = false;
 
 if single_unit
     if lbhb
-        recording_ids = {'AMT028b05_p_NTI', 'AMT031a13_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
-        %recording_ids = {'AMT031a13_p_NTI', 'AMT032a11_p_NTI'};
-        %recording_ids = {'AMT032a11_p_NTI'};
+        recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
     else 
         recording_ids = {'tomette002a10_p_NSD'};
     end
@@ -38,7 +37,11 @@ if single_unit
     %    'tomette063a08_p_NSD', ...
     %    }; % SHN
 else
-    recording_ids = {'tomette067a17_p_NSD'};
+    if lbhb
+        recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
+    else 
+        recording_ids = {'tomette067a17_p_NSD'};
+    end
     %recording_ids = {...
     %    'tomette002a10_p_NSD', 'tomette012a06_p_NSD', 'tomette014a09_p_NSD', ...
     %    'tomette016b09_p_NSD', 'tomette018a06_p_NSD', 'tomette026a08_p_NSD', ...
@@ -59,7 +62,7 @@ for i = 1:length(recording_ids)
                                     animal_codes.(a_code) '/' ...
                                     recording_ids{i}(1:6)];
     else
-        recording_directories{i} = [data_directory '/Tomette/' recording_ids{i}(1:10)];
+        recording_directories{i} = ['/auto/users/mateo/Sam Analysis/Tomette/' recording_ids{i}(1:10)];
     end
 end
 
@@ -98,7 +101,7 @@ for i = 1:length(recording_ids)
     figure_directory = [project_directory '/figures/test-retest'];
     rall{i} = reliability(recording_directory, recording_ids{i}, ...
         'plot', false, 'figure_directory', figure_directory, ...
-        'fwhm_ms', 10, 'single_unit', single_unit);
+        'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
 end
 
 %% Histogram of test-retest reliability
@@ -120,7 +123,7 @@ for i = 1:length(recording_ids)
     figure_directory = [project_directory '/figures/lag-correlation/' recording_ids{i}];
     r = reliability(recording_directory, recording_ids{i}, ...
         'plot', false, 'figure_directory', figure_directory, ...
-        'fwhm_ms', 10, 'single_unit', single_unit);
+        'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
     lag_corr_cross_segdur(recording_directory, recording_ids{i}, ...
         'figure_directory', figure_directory, ...
         'analysis_directory', analysis_directory, ...
@@ -128,5 +131,6 @@ for i = 1:length(recording_ids)
         'single_unit', single_unit, ...
         'units', find(r>0.1),...
         'overwrite', overwrite, ...
-        'plot_figure', plot_figure);
+        'plot_figure', plot_figure,...
+        'spike_thresh', 4);
 end
