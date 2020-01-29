@@ -10,6 +10,9 @@ addpath(genpath([root_directory '/export_fig_v3']));
 addpath(genpath([root_directory '/helper-functions']));
 project_directory = [root_directory '/scrambling-ferrets'];
 
+% lbhb file reading utilities, hopefully it does not brek pathing
+baphy_set_path
+
 if exist([project_directory '/data'], 'dir')
     %data_directory = [project_directory '/data']; % SNH
 elseif exist('/auto/data/daq', 'dir')
@@ -19,14 +22,14 @@ else
     %data_directory = '/Volumes/data'; % SNH
 end
 
-single_unit = false;
-lbhb = true;
+single_unit = true;
+lbhb = true; % uses data from david lab.
 overwrite = false;
-plot_figure = false;
+plot_figure = true;
 
 if single_unit
     if lbhb
-        recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
+        recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI'};
     else 
         recording_ids = {'tomette002a10_p_NSD'};
     end
@@ -38,9 +41,9 @@ if single_unit
     %    }; % SHN
 else
     if lbhb
-        recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI'}; % MLE LBHB example
+        recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI'};
     else 
-        recording_ids = {'tomette067a17_p_NSD'};
+        recording_ids = {'tomette002a10_p_NSD'};
     end
     %recording_ids = {...
     %    'tomette002a10_p_NSD', 'tomette012a06_p_NSD', 'tomette014a09_p_NSD', ...
@@ -94,14 +97,16 @@ varargin = {};
 %% reliability analysis
 
 clc;
-rall = cell(1, length(recording_ids));
-for i = 1:length(recording_ids)
-    fprintf('%d: %s\n', i, recording_ids{i}); drawnow;
-    recording_directory = recording_directories{i};
-    figure_directory = [project_directory '/figures/test-retest'];
-    rall{i} = reliability(recording_directory, recording_ids{i}, ...
-        'plot', false, 'figure_directory', figure_directory, ...
-        'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
+if plot_figure
+    rall = cell(1, length(recording_ids));
+    for i = 1:length(recording_ids)
+        fprintf('%d: %s\n', i, recording_ids{i}); drawnow;
+        recording_directory = recording_directories{i};
+        figure_directory = [project_directory '/figures/test-retest'];
+        rall{i} = reliability(recording_directory, recording_ids{i}, ...
+            'plot', false, 'figure_directory', figure_directory, ...
+            'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
+    end
 end
 
 %% Histogram of test-retest reliability

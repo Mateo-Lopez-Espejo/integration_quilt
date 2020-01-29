@@ -10,7 +10,7 @@ function [raster_smooth, tbins] = raster(recording_directory, recording_id, win,
 I.fwhm_ms = 10;
 I.raster_sr = 500;
 I.spike_thresh = -4;
-I.spike_sr = 31250;
+%I.spike_sr = 31250 % Harcoded for Sam data
 I.single_unit = false;
 I = parse_optInputs_keyvalue(varargin, I);
 
@@ -35,7 +35,7 @@ n_bins = length(tbins);
 if I.single_unit
     
     % raster for all units
-    raster = nan(n_bins, n_trials, 100);
+    raster = zeros(n_bins, n_trials, 100);
     X = load([recording_directory '/sorted/' recording_id '.spk.mat']);
     if isfield(X, 'rate') && ~isempty(X.rate)% MLE. Whis is this value coming from outside?
         I.spike_sr = X.rate; 
@@ -78,8 +78,11 @@ else
     tbins = win(1) : 1/I.raster_sr : win(2);
     n_bins = length(tbins);
     
+    [~,~,~,I.spike_sr,~,~,~] = ...
+        evpgetinfo([recording_directory '/' recording_id '.evp']);
+    
     % raster for all units
-    raster = nan(n_bins, n_trials, n_electrodes);
+    raster = zeros(n_bins, n_trials, n_electrodes);
     for elec = 1:n_electrodes
         load([recording_directory '/tmp/' recording_id '.001.1.elec' ...
             num2str(elec) '.sig' num2str(I.spike_thresh) '.mat'], ...

@@ -20,6 +20,7 @@ I.tranweightdenom = 'none'; % applied to denominator
 I.forcecausal = false;
 I.bestcausal = true; % select only amongst causal solutions (not relevant for Gausssian)
 I.plotcausal = true; % only plot errors for causal solutions
+I.batch_size = 25;
 switch I.distr
     case 'gauss'
         I.shape = 1;
@@ -68,200 +69,252 @@ end
 MAT_file = [L.output_directory '/model_fit_' param_string_modelfit '.mat'];
 if ~exist(MAT_file, 'file') || I.overwrite
     
-    [n_lags, n_seg, n_channels] = size(L.same_context);
-    assert(n_channels == length(L.channels));
-    assert(length(L.unique_segs)==n_seg);
-    assert(n_lags == length(L.lag_t))
+    % proceses in batches of I.batch_size channel to avoid running out of memory
+    num_of_batches = ceil(length(L.channels)/I.batch_size);
+    last_batch = mod(length(L.channels), I.batch_size);
     
-    % measure to predict with the model
-    same_context = L.same_context;
-    diff_context = L.diff_context;
-    denom_factor = nan(size(L.same_context));
-    M.Y = nan(size(same_context));
-    for k = 1:n_seg
-        if I.normcorr
-            assert(~I.divnorm);
-            baseline = mean(same_context(:,k,:));
-            M.Y(:,k,:) = 1 - bsxfun(@times, (same_context(:,k,:)-diff_context(:,k,:)), 1./baseline);
-            denom_factor(:,k,:) = repmat(baseline, 1, size(same_context,1));
-        elseif I.divnorm
-            assert(~I.normcorr);
-            for q = 1:size(diff_context,3)
-                xi = same_context(:,k,q)>I.mindenom;
-                M.Y(xi,k,q) = diff_context(xi,k,q) ./ same_context(xi,k,q);
-                denom_factor(xi,k,q) = same_context(xi,k,q);
-                clear xi;
-            end
-        else
-            M.Y(:,k,:) = same_context(:,k,:)-diff_context(:,k,:);
-            denom_factor(:,k,:) = 1;
+    % defines cells to independently hold results for each batch
+    M.Y = {};
+    M.err = {};
+    M.Ybest = {};
+    M.best_intper_sec = {};
+    M.best_delay_smp = {};
+    M.best_shape_smp = {}; 
+    M.best_shape = {};
+       
+    for batch= 1:num_of_batches
+        fprintf('\nprocesing batch %d of %d\n', batch, num_of_batches)
+        % splits the date into batches
+        batch_start = (batch * I.batch_size) - I.batch_size + 1;
+        if batch < num_of_batches
+            batch_end = batch_start + I.batch_size - 1;
+        elseif batch == num_of_batches && last_batch == 0
+            batch_end = batch_start + I.batch_size - 1;            
+        else 
+            batch_end = batch_start + last_batch -1;
         end
-    end
-    
-    % segment dependent weights
-    w_segs = tranweightnsegsfn(L.n_total_segs);
-    
-    % valid segment durations
-    valid_seg_durs = find(w_segs>0);
         
-    % integration period
-    M.intper_sec = logspace(log10(L.unique_segs(1)/1000), log10(L.unique_segs(end)/1000), 20);
-    M.delay_smp = 1:0.5*L.sr;
-    M.shape = I.shape;
-    M.err = nan(length(M.intper_sec), length(M.delay_smp), length(M.shape), n_channels);
-    M.Yh = nan([n_lags, n_seg, length(M.intper_sec), length(M.delay_smp), length(M.shape), n_channels]);
-    M.causal_win = false(length(M.intper_sec), length(M.delay_smp), length(M.shape));
-    for m = 1:length(M.shape)
+        % get the relevant slices for each batch (B)
+        B.same_context = L.same_context(:, :, batch_start:batch_end);
+        B.diff_context = L.diff_context(:, :, batch_start:batch_end);
+        B.channels = L.channels(batch_start : batch_end);
         
-        fprintf('shape %.2f\n', M.shape(m));
-        for i = 1:length(M.intper_sec)
-            for j = 1:length(M.delay_smp)
-                
-                                
-                %                 % parameters to run code within just this loop
-                %                 I.distr = 'gamma';
-                %                 L.lag_t = [0 1];
-                %                 L.sr = 100;
-                %                 i = 1;
-                %                 j = 1;
-                %                 m = 1;
-                %                 M.intper_sec = 0.1;
-                %                 M.delay_smp = L.sr*0;
-                %                 M.shape = 1;
-                %                 i = 10;
-                %                 j = 1;
-                %                 m = 1;
+        [n_lags, n_seg, n_channels] = size(B.same_context);
+        assert(n_channels == length(B.channels));
+        assert(length(L.unique_segs)==n_seg);
+        assert(n_lags == length(L.lag_t))
 
-                % time vector in samples
-                t = -2*L.lag_t(end)*L.sr:2*L.lag_t(end)*L.sr;
-                
-                switch I.distr
-                    case 'gauss'
-                        
-                        % gaussian window
-                        % sigma when int period = central 95%
-                        sig_sec = M.intper_sec(i) / 3.92;
-                        sig_smp = L.sr * sig_sec;
-                        h = normpdf(t - M.delay_smp(j), 0, sig_smp);
-                        if I.forcecausal
-                            h(t < 0) = 0;
-                        end
-                        h = h / sum(h);
-                        
-                        % plot
-                        figure;
-                        plot(t/L.sr, h);
-                        xlim(3*M.intper_sec(i)*[-1, 1] + M.delay_smp(j)/L.sr);
-                        
-                        % Gaussian window is never causal
-                        M.causal_win(i,j,m) = false;
-                        
-                    case 'gamma'
-                        
-                        % gaussian window
-                        % sigma corresponding to 95%
-                        a = M.shape(m);
-                        b = 1/M.shape(m);
-                        
-                        % time vector in samples and seconds
-                        t = -2*L.lag_t(end)*L.sr:2*L.lag_t(end)*L.sr;
-                        t_sec = t/L.sr;
-                        
-                        % ratio which to scale stimulus
-                        default_intper = gaminv(0.975,a,b) - gaminv(0.025,a,b);
-                        r = M.intper_sec(i)/default_intper;
-                        
-                        % offset to adust delay
-                        min_peak = max((a-1)*b,0)*r;
-                        c = M.delay_smp(j)/L.sr - min_peak;
-                        if M.delay_smp(j)/L.sr < min_peak
+        % measure to predict with the model
+        same_context = B.same_context;
+        diff_context = B.diff_context;
+        denom_factor = nan(size(B.same_context));
+        Mb.Y = nan(size(same_context));
+        for k = 1:n_seg
+            if I.normcorr
+                assert(~I.divnorm);
+                baseline = mean(same_context(:,k,:));
+                Mb.Y(:,k,:) = 1 - bsxfun(@times, (same_context(:,k,:)-diff_context(:,k,:)), 1./baseline);
+                denom_factor(:,k,:) = repmat(baseline, 1, size(same_context,1));
+            elseif I.divnorm
+                assert(~I.normcorr);
+                for q = 1:size(diff_context,3)
+                    xi = same_context(:,k,q)>I.mindenom;
+                    Mb.Y(xi,k,q) = diff_context(xi,k,q) ./ same_context(xi,k,q);
+                    denom_factor(xi,k,q) = same_context(xi,k,q);
+                    clear xi;
+                end
+            else
+                Mb.Y(:,k,:) = same_context(:,k,:)-diff_context(:,k,:);
+                denom_factor(:,k,:) = 1;
+            end
+        end
+
+        % segment dependent weights
+        w_segs = tranweightnsegsfn(L.n_total_segs);
+
+        % valid segment durations
+        valid_seg_durs = find(w_segs>0);
+
+        % integration period
+        M.intper_sec = logspace(log10(L.unique_segs(1)/1000), log10(L.unique_segs(end)/1000), 20);
+        M.delay_smp = 1:0.5*L.sr;
+        M.shape = I.shape;
+        Mb.err = nan(length(M.intper_sec), length(M.delay_smp), length(M.shape), n_channels);
+        Yh = nan([n_lags, n_seg, length(M.intper_sec), length(M.delay_smp), length(M.shape), n_channels]);
+        M.causal_win = false(length(M.intper_sec), length(M.delay_smp), length(M.shape));
+        for m = 1:length(M.shape)
+
+            fprintf('shape %.2f\n', M.shape(m));
+            for i = 1:length(M.intper_sec)
+                for j = 1:length(M.delay_smp)
+
+
+                    %                 % parameters to run code within just this loop
+                    %                 I.distr = 'gamma';
+                    %                 L.lag_t = [0 1];
+                    %                 L.sr = 100;
+                    %                 i = 1;
+                    %                 j = 1;
+                    %                 m = 1;
+                    %                 M.intper_sec = 0.1;
+                    %                 M.delay_smp = L.sr*0;
+                    %                 M.shape = 1;
+                    %                 i = 10;
+                    %                 j = 1;
+                    %                 m = 1;
+
+                    % time vector in samples
+                    t = -2*L.lag_t(end)*L.sr:2*L.lag_t(end)*L.sr;
+
+                    switch I.distr
+                        case 'gauss'
+
+                            % gaussian window
+                            % sigma when int period = central 95%
+                            sig_sec = M.intper_sec(i) / 3.92;
+                            sig_smp = L.sr * sig_sec;
+                            h = normpdf(t - M.delay_smp(j), 0, sig_smp);
+                            if I.forcecausal
+                                h(t < 0) = 0;
+                            end
+                            h = h / sum(h);
+
+                            % plot
+                            figure;
+                            plot(t/L.sr, h);
+                            xlim(3*M.intper_sec(i)*[-1, 1] + M.delay_smp(j)/L.sr);
+
+                            % Gaussian window is never causal
                             M.causal_win(i,j,m) = false;
-                        else
-                            M.causal_win(i,j,m) = true;
+
+                        case 'gamma'
+
+                            % gaussian window
+                            % sigma corresponding to 95%
+                            a = M.shape(m);
+                            b = 1/M.shape(m);
+
+                            % time vector in samples and seconds
+                            t = -2*L.lag_t(end)*L.sr:2*L.lag_t(end)*L.sr;
+                            t_sec = t/L.sr;
+
+                            % ratio which to scale stimulus
+                            default_intper = gaminv(0.975,a,b) - gaminv(0.025,a,b);
+                            r = M.intper_sec(i)/default_intper;
+
+                            % offset to adust delay
+                            min_peak = max((a-1)*b,0)*r;
+                            c = M.delay_smp(j)/L.sr - min_peak;
+                            if M.delay_smp(j)/L.sr < min_peak
+                                M.causal_win(i,j,m) = false;
+                            else
+                                M.causal_win(i,j,m) = true;
+                            end
+
+                            % gamma distribution
+                            h = gampdf((t_sec-c)/r, a, b);
+                            if I.forcecausal
+                                h(t_sec < 0) = 0;
+                            end
+                            h = h / sum(h);
+
+                            % plot
+                            % figure;
+                            % plot(t_sec, h);
+                            % xlim(3*M.intper_sec(i)*[-1, 1] + M.delay_smp/L.sr)
+
+                        otherwise
+                            error('No matching distribution');
+                    end
+
+                    % calculate predictions for each segment
+                    for k = valid_seg_durs
+
+                        % rectangular segment
+                        seg = zeros(size(t));
+                        seg_dur_smp = round(L.sr * L.unique_segs(k)/1000);
+                        seg(t <= seg_dur_smp & t >= 0) = 1;
+                        % plot(t, [h'/max(h(:)), seg'/max(seg(:))]);
+
+                        % convolve receptive field with segment
+                        area = myconv(seg', h', 'causal', false);
+                        % plot(t, area);
+                        % ylim([0 1]);
+
+                        % prdictions for each electrode
+                        for q = 1:n_channels
+                            predictor = area(t >= 0);
+                            predictor = predictor(1:n_lags);
+                            predictor = predictor(:);
+                            if I.normcorr || I.divnorm
+                                Yh(:,k,i,j,m,q) = predictor;
+                            else
+                                Yh(:,k,i,j,m,q) = (1-predictor)*pinv(1-predictor)*Mb.Y(:,k,q);
+                            end
                         end
-                        
-                        % gamma distribution
-                        h = gampdf((t_sec-c)/r, a, b);
-                        if I.forcecausal
-                            h(t_sec < 0) = 0;
-                        end
-                        h = h / sum(h);
-                        
-                        % plot
-                        % figure;
-                        % plot(t_sec, h);
-                        % xlim(3*M.intper_sec(i)*[-1, 1] + M.delay_smp/L.sr)
-                        
-                    otherwise
-                        error('No matching distribution');
-                end
-                
-                % calculate predictions for each segment
-                for k = valid_seg_durs
-                    
-                    % rectangular segment
-                    seg = zeros(size(t));
-                    seg_dur_smp = round(L.sr * L.unique_segs(k)/1000);
-                    seg(t <= seg_dur_smp & t >= 0) = 1;
-                    % plot(t, [h'/max(h(:)), seg'/max(seg(:))]);
-                    
-                    % convolve receptive field with segment
-                    area = myconv(seg', h', 'causal', false);
-                    % plot(t, area);
-                    % ylim([0 1]);
-                    
-                    % prdictions for each electrode
+                    end
+
+                    % calculate error
                     for q = 1:n_channels
-                        predictor = area(t >= 0);
-                        predictor = predictor(1:n_lags);
-                        predictor = predictor(:);
-                        if I.normcorr || I.divnorm
-                            M.Yh(:,k,i,j,m,q) = predictor;
+                        E = (Yh(:,valid_seg_durs,i,j,m,q) - Mb.Y(:,valid_seg_durs,q)).^2;
+                        if I.weightdenom
+                            w_denom = denom_factor(:,valid_seg_durs,q);
+                            w_denom(~(w_denom>I.mindenom)) = 0;
+                            w_denom = tranweightdenomfn(w_denom);
+                            w_total = bsxfun(@times, w_denom, w_segs(valid_seg_durs));
                         else
-                            M.Yh(:,k,i,j,m,q) = (1-predictor)*pinv(1-predictor)*M.Y(:,k,q);
+                            w_total = w_segs(valid_seg_durs);
                         end
+                        w_total = w_total / sum(w_total(:));
+                        Ew = bsxfun(@times, E, w_total);
+                        clear w_total w_denom;
+                        Mb.err(i,j,m,q) = nanmean(Ew(:));
                     end
-                end
-                
-                % calculate error
-                for q = 1:n_channels
-                    E = (M.Yh(:,valid_seg_durs,i,j,m,q) - M.Y(:,valid_seg_durs,q)).^2;
-                    if I.weightdenom
-                        w_denom = denom_factor(:,valid_seg_durs,q);
-                        w_denom(~(w_denom>I.mindenom)) = 0;
-                        w_denom = tranweightdenomfn(w_denom);
-                        w_total = bsxfun(@times, w_denom, w_segs(valid_seg_durs));
-                    else
-                        w_total = w_segs(valid_seg_durs);
-                    end
-                    w_total = w_total / sum(w_total(:));
-                    Ew = bsxfun(@times, E, w_total);
-                    clear w_total w_denom;
-                    M.err(i,j,m,q) = nanmean(Ew(:));
                 end
             end
         end
-    end
-    
-    % find best prediction
-    M.Ybest = nan(n_lags, n_seg, n_channels);
-    M.best_intper_sec = nan(n_channels,1);
-    M.best_delay_smp = nan(n_channels,1);
-    M.best_shape_smp = nan(n_channels,1);
-    for q = 1:n_channels
-        X = M.err(:,:,:,q);
-        if any(M.causal_win(:)) && I.bestcausal
-            X(~M.causal_win) = inf;
+
+        % find best prediction
+        Mb.Ybest = nan(n_lags, n_seg, n_channels);
+        Mb.best_intper_sec = nan(n_channels,1);
+        Mb.best_delay_smp = nan(n_channels,1);
+        Mb.best_shape_smp = nan(n_channels,1);
+        for q = 1:n_channels
+            X = Mb.err(:,:,:,q);
+            if any(M.causal_win(:)) && I.bestcausal
+                X(~M.causal_win) = inf;
+            end
+            [~,xi] = min(X(:));
+            [a,b,c] = ind2sub(size(X), xi);
+            Mb.Ybest(:,:,q) = Yh(:,:,a,b,c,q);
+            Mb.best_intper_sec(q) = M.intper_sec(a);
+            Mb.best_delay_smp(q) = M.delay_smp(b);
+            Mb.best_shape(q) = M.shape(c);
+            clear X;
         end
-        [~,xi] = min(X(:));
-        [a,b,c] = ind2sub(size(X), xi);
-        M.Ybest(:,:,q) = M.Yh(:,:,a,b,c,q);
-        M.best_intper_sec(q) = M.intper_sec(a);
-        M.best_delay_smp(q) = M.delay_smp(b);
-        M.best_shape(q) = M.shape(c);
-        clear X;
+        clear Yh;
+        
+        % pool together the results from independent batches
+        M.Y{batch} = Mb.Y;
+        M.err{batch} = Mb.err;
+        M.Ybest{batch} = Mb.Ybest;
+        M.best_intper_sec{batch} = Mb.best_intper_sec;
+        M.best_delay_smp{batch} = Mb.best_delay_smp;
+        M.best_shape_smp{batch} = Mb.best_shape_smp; 
+        M.best_shape{batch} = Mb.best_shape;
     end
     
+    % Recontstitute batches into full data
+    M.Y = cat(3, M.Y{:});
+    M.err = cat(4, M.err{:});
+    M.Ybest = cat(3, M.Ybest{:});
+    M.best_intper_sec = cat(1, M.best_intper_sec{:});
+    M.best_delay_smp = cat(1, M.best_delay_smp{:});
+    M.best_shape_smp = cat(1, M.best_shape_smp{:});
+    M.best_shape = cat(2, M.best_shape{:});   
+    
+    
+    % add parses fields usefull for plotting    
     M.channels = L.channels;
     M.chnames = L.chnames;
     M.sr = L.sr;

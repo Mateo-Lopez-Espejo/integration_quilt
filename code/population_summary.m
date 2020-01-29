@@ -9,7 +9,9 @@ addpath(genpath([root_directory '/general-analysis-code']));
 addpath(genpath([root_directory '/export_fig_v3']));
 results_dir = [root_directory '/scrambling-ferrets/analysis/lag-correlation'];
 
-recording_ids = {'AMT028b05_p_NTI', 'AMT032a11_p_NTI',  'tomette002a10_p_NSD'};
+recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',  'tomette002a10_p_NSD'};
+recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',};
+
 
 % finds and lists the directory of and site of relevant sites
 all_analysis_files = subdir(results_dir);
@@ -18,7 +20,8 @@ file_counter = 0;
 for ff = 1:length(all_analysis_files)
     [filepath, name, ext] = fileparts(all_analysis_files(ff).name);
     for rr=1:length(recording_ids)
-        if ~isempty(strfind(filepath, recording_ids{rr}))
+        if contains(filepath, recording_ids{rr}) && ...
+           contains(filepath, 'single_unit-1')
             if startsWith(name, 'model_fit_')
                 file_counter = file_counter + 1;
                 files_to_load{file_counter} = all_analysis_files(ff).name;
@@ -27,7 +30,6 @@ for ff = 1:length(all_analysis_files)
     end
 end
 files_to_load = files_to_load(1:file_counter);
-
 
 % loads and parses relevant data
 
@@ -45,33 +47,48 @@ for ff=1:length(files_to_load)
         best_fits(unit_counter).best_intper_sec = M.best_delay_smp(uu)/M.sr*1000;
         best_fits(unit_counter).best_delay_smp = M.best_intper_sec(uu)*1000;
         if isfield(M, 'chnames')
-            best_fits(unit_counter).chnames = M.chnames{M.channels(uu)};
+            best_fits(unit_counter).chname = M.chnames{M.channels(uu)};
         else
             parts = split(files_to_load{ff}, '/');
-            best_fits(unit_counter).chnames = [parts{9} '_ch_' M.channels(uu)];
+            best_fits(unit_counter).chname = [parts{9} '_ch_' M.channels(uu)];
         end
     end
 end
+
+% defines sites and plotting colors
 best_fits = best_fits(1:unit_counter);
+
+sites = struct();
+for rr = 1:length(recording_ids)
+    sites.(recording_ids{rr}(1:7)) = rr;
+end 
+
 
 int = zeros(1, length(best_fits));
 lag = zeros(1, length(best_fits));
 cellname = cell(1, length(best_fits));
+color = zeros(1, length(best_fits));
+site = cell(1, length(best_fits));
 for cc = 1:length(best_fits)
     int(cc) = best_fits(cc).best_intper_sec;
     lag(cc) = best_fits(cc).best_delay_smp;
-    cellname{cc} = best_fits(cc).chnames;
+    cellname{cc} = best_fits(cc).chname;
+    color(cc) = sites.(best_fits(cc).chname(1:7));
+    site{cc} = best_fits(cc).chname(1:7);
 end 
 
+site = categorical(site);
+
 fig = figure();
-scatter(int, lag, 'filled');
+gscatter(int, lag, site)
 dx = 0; dy = 0; % displacement so the text does not overlay the data points
 snapnow;
-text(int+dx, lag+dy, cellname, 'fontsize', 15);
+%text(int+dx, lag+dy, cellname, 'fontsize', 15, 'rotation', -15);
 xlabel('best time Lag (ms)');
 ylabel('best integration (ms)');
 ylim([0, 510]);
 set(gca, 'YDir','reverse')
+
 
 
 

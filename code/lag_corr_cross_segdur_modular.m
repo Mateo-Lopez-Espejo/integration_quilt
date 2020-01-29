@@ -64,6 +64,9 @@ for i = 1:size(D,3)
     I.chnames{i} = ['ch' num2str(i)];
 end
 
+% single unit, defines folder name 
+I.single_unit =  false;
+
 % overwrite defaults with optional inputs
 [I, C, C_value] = parse_optInputs_keyvalue(varargin, I);
 
@@ -86,7 +89,7 @@ end
 
 % parameter with optional arguments
 param_string = [...
-    struct2string(I, 'include_fields', {'boundary','lag_win','trancorr','tranweight'}), ...
+    struct2string(I, 'include_fields', {'boundary','lag_win','trancorr','tranweight','single_unit'}), ...
     '_' struct2string(C_value, 'include_fields', {'channels','excludesources'})];
 if param_string(end)=='_'; param_string = param_string(1:end-1); end
 
@@ -396,23 +399,19 @@ if ~exist(MAT_file, 'file') || I.overwrite
         end
     end
     
-
+    % parses additional parameters
+    L.channels = I.channels;
+    L.param_string = param_string;
+    L.chnames = I.chnames;
+    L.boundary = I.boundary;
+    L.figure_directory = [I.figure_directory '/' param_string];
+    L.output_directory = [I.output_directory '/' param_string];
+    
     save(MAT_file, 'L');
     
 else
-    
     load(MAT_file, 'L');
-    
 end
-
-% save additional parameters
-L.channels = I.channels;
-L.param_string = param_string;
-L.chnames = I.chnames;
-L.boundary = I.boundary;
-L.figure_directory = [I.figure_directory '/' param_string];
-L.output_directory = [I.output_directory '/' param_string];
-save(MAT_file, 'L');
 
 %% Plotting
 
