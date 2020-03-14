@@ -12,6 +12,7 @@ function [L, M, raster_separate_reps, t, S] = ...
 % directories to save results to
 I.figure_directory = pwd;
 I.analysis_directory = pwd;
+I.raster_directory = pwd;
 
 I.lag_win = [0, 1];
 I.plot_win = [0, 0.5];
@@ -45,6 +46,9 @@ I.single_unit = false;
 
 % whether or not to overwrite results
 I.overwrite = false;
+
+% save formated rasters, by request of Sam. MLE
+I.save_rasters = false; 
 
 I = parse_optInputs_keyvalue(varargin, I);
 
@@ -122,15 +126,15 @@ S.scramstim_dur = 10; % total duration of each scrambled stimulus
 S.sourcestim_dur = 0.5; % duration of the source stimuli
 
 %% Perform lag analysis
-if 0
+if I.save_rasters
     % save some rasters for sam, select only good cells (reliability > 0.1)
     D = raster_separate_reps(:,:,I.units,:);
     t = tbins' - T.prestim_silence;
     cell_id = chnames(I.units);
-    filename = ['/auto/users/mateo/' recording_id(1:7)];
+    filename = mkpdir(I.raster_directory);
     save(filename, 'D', 't', 'S', 'cell_id');
-
 else
+
     t = tbins' - T.prestim_silence;
     L = lag_corr_cross_segdur_modular(...
         raster_separate_reps, t, S, ...
@@ -150,5 +154,6 @@ else
         'tranweightnsegs', I.tranweightnsegs, 'tranweightdenom', I.tranweightdenom, ...
         'weightdenom', I.weightdenom, 'distr', I.distr, ...
         'plot_figure', I.plot_figure);
+end
 
 end

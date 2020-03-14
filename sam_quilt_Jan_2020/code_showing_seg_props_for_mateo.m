@@ -1,6 +1,6 @@
 % load S structure sent by Mateo
 %load([project_directory '/data/lag_corr_rasters_from_mateo_2019-06-26/AMT026a.mat'], 'S');
-load([project_directory '/data/lag_corr_rasters_from_mateo_2019-06-26/AMT026a.mat'], 'S');
+load('/auto/users/mateo/Sam Analysis/scrambling-ferrets/rasters/AMT032a11_p_NTI.mat', 'S');
 
 % number of scrambled stimuli, should be 12
 n_scram_stim = length(S.stim_labels);
@@ -53,9 +53,10 @@ end
 %% Now let's check the above is right
 
 % let's pick the 20th segment from a 31 ms scrambled stimulus
-directory_with_scrambled_stimuli = '/Users/svnh2/Dropbox (MIT)/mindhive/scrambling-ferrets/stimuli/naturalsound-v2-whitened-quilt-0.5sec-catmethod2';
-stim_index = 3;
-seg_index = 20;
+%directory_with_scrambled_stimuli = '/Users/svnh2/Dropbox (MIT)/mindhive/scrambling-ferrets/stimuli/naturalsound-v2-whitened-quilt-0.5sec-catmethod2';
+directory_with_scrambled_stimuli = '/auto/users/mateo/baphy/Config/lbhb/SoundObjects/@NatTempIntegrate/sounds'; % MLE
+stim_index = 10;
+seg_index = 5;
 seg_dur = S.segs(stim_index)/1000;
 [wav, sr] = audioread([directory_with_scrambled_stimuli '/' S.stim_labels{stim_index} '.wav']);
 inds = (1:round(seg_dur*sr)) + round((seg_index-1)*seg_dur*sr);
@@ -63,7 +64,8 @@ seg_from_scrambled_stim = wav(inds);
 
 % now let's try to find the corresponding segment in the source stimuli
 % note mydir is a personal function
-directory_with_source_stimuli = '/Users/svnh2/Dropbox (MIT)/mindhive/scrambling-ferrets/stimuli/naturalsound-v2-whitened';
+%directory_with_source_stimuli = '/Users/svnh2/Dropbox (MIT)/mindhive/scrambling-ferrets/stimuli/naturalsound-v2-whitened';
+directory_with_source_stimuli = '/auto/users/mateo/Sam Analysis/sam_quilt_Jan_2020/naturalsound-v2-whitened';
 S.sources = mydir(directory_with_source_stimuli, '.wav');
 source = S.sources{S.segorder(stim_index).source_index(seg_index)};
 source_onset_time = S.segorder(stim_index).source_onset_time(seg_index);
@@ -73,5 +75,7 @@ seg_from_source_stim = wav(inds);
 
 % now let's plot both to confirm they are the same
 figure;
-plot([seg_from_source_stim, seg_from_scrambled_stim])
-
+plot(seg_from_source_stim)
+hold on
+plot(seg_from_scrambled_stim)
+hold off
