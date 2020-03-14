@@ -4,7 +4,7 @@
 
 % paths to external code repositories
 
-root_directory = '/auto/users/mateo/Sam Analysis'; % MLE  
+root_directory = '/auto/users/mateo/integration_quilt'; % MLE  
 addpath(genpath([root_directory '/general-analysis-code']));
 addpath(genpath([root_directory '/export_fig_v3']));
 addpath(genpath([root_directory '/helper-functions']));
@@ -24,15 +24,17 @@ end
 
 single_unit = true;
 lbhb = true; % uses data from david lab.
-overwrite = false;
-plot_figure = false;
+overwrite = true;
+plot_figure = true;
 save_rasters = false; % saves the rasters for Sam, skips the analysis. 
 
 if single_unit
     if lbhb
-        recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT029a16_p_NTI',...
-            'AMT030a12_p_NTI', 'AMT032a11_p_NTI', 'DRX008b14_p_NTI',...
-            'DRX010c05_p_NTI', 'DRX021a19_p_NTI', 'DRX023a22_p_NTI'};
+        recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI',...
+            'AMT032a11_p_NTI', 'DRX021a19_p_NTI'};
+        
+        % to sort: 'AMT029a16_p_NTI', AMT030a12_p_NTI, , 'DRX008b14_p_NTI'
+        % 'DRX010c05_p_NTI', 'DRX023a22_p_NTI'
     else 
         recording_ids = {'tomette002a10_p_NSD'};
     end
@@ -47,6 +49,7 @@ end
 
 % asigns full animal name to the animal code 
 animal_codes.AMT = 'Amanita';
+animal_codes.DRX = 'Drechsler';
 
 recording_directories = cell(1, length(recording_ids));
 
@@ -69,12 +72,16 @@ clc;
 if plot_figure
     rall = cell(1, length(recording_ids));
     for i = 1:length(recording_ids)
-        fprintf('%d: %s\n', i, recording_ids{i}); drawnow;
-        recording_directory = recording_directories{i};
-        figure_directory = [project_directory '/figures/test-retest'];
-        rall{i} = reliability(recording_directory, recording_ids{i}, ...
-            'plot', false, 'figure_directory', figure_directory, ...
-            'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
+        try
+            fprintf('%d: %s\n', i, recording_ids{i}); drawnow;
+            recording_directory = recording_directories{i};
+            figure_directory = [project_directory '/figures/test-retest'];
+            rall{i} = reliability(recording_directory, recording_ids{i}, ...
+                'plot', false, 'figure_directory', figure_directory, ...
+                'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
+        catch
+            disp([recording_ids{i} ' no such data']);
+        end
     end
 end
 
@@ -92,25 +99,22 @@ end
 
 clc;
 for i = 1:length(recording_ids)
-    try
-        recording_directory = recording_directories{i};
-        analysis_directory = [project_directory '/analysis/lag-correlation/' recording_ids{i}];
-        raster_directory = [project_directory '/rasters/' recording_ids{i}];
-        figure_directory = [project_directory '/figures/lag-correlation/' recording_ids{i}];
-        r = reliability(recording_directory, recording_ids{i}, ...
-            'plot', false, 'figure_directory', figure_directory, ...
-            'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
-        lag_corr_cross_segdur(recording_directory, recording_ids{i}, ...
-            'figure_directory', figure_directory, ...
-            'analysis_directory', analysis_directory, ...
-            'raster_directory', raster_directory, ...
-            'fwhm_ms', 10, ...
-            'single_unit', single_unit, ...
-            'units', find(r>0.1),...
-            'overwrite', overwrite, ...
-            'save_rasters', save_rasters, ...
-            'plot_figure', plot_figure,...
-            'spike_thresh', 4);
-    catch
-    end        
+    recording_directory = recording_directories{i};
+    analysis_directory = [project_directory '/analysis/lag-correlation/' recording_ids{i}];
+    raster_directory = [project_directory '/rasters/' recording_ids{i}];
+    figure_directory = [project_directory '/figures/lag-correlation/' recording_ids{i}];
+    r = reliability(recording_directory, recording_ids{i}, ...
+        'plot', false, 'figure_directory', figure_directory, ...
+        'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
+    lag_corr_cross_segdur(recording_directory, recording_ids{i}, ...
+        'figure_directory', figure_directory, ...
+        'analysis_directory', analysis_directory, ...
+        'raster_directory', raster_directory, ...
+        'fwhm_ms', 10, ...
+        'single_unit', single_unit, ...
+        'units', find(r>0.1),...
+        'overwrite', overwrite, ...
+        'save_rasters', save_rasters, ...
+        'plot_figure', plot_figure,...
+        'spike_thresh', 4);
 end
