@@ -3,11 +3,21 @@
 % 2019-06-16: Created. Mateo Lopez Espejo
 
 % path to data
+root_directory = '/auto/users/mateo/integration_quilt';%
 
-root_directory = '/auto/users/mateo/Sam Analysis'; % MLE  
-addpath(genpath([root_directory '/general-analysis-code']));
-addpath(genpath([root_directory '/export_fig_v3']));
-results_dir = [root_directory '/scrambling-ferrets/analysis/lag-correlation'];
+% paths for windows machine 
+f = filesep;
+root_directory = ['U:' f 'mateo' f 'integration_quilt']; % VNP
+root_directory = ['C:' f 'Users' f 'mateo' f 'documents' f ...
+    'science' f 'code' f 'integration_quilt']; % local copy
+addpath(genpath([root_directory f 'general-analysis-code']));
+addpath(genpath([root_directory f 'export_fig_v3']));
+addpath(genpath([root_directory f 'helper-functions']));
+
+addpath(genpath([root_directory f 'general-analysis-code']));
+addpath(genpath([root_directory f 'export_fig_v3']));
+results_dir = [root_directory f 'scrambling-ferrets' f 'analysis' ...
+               f 'lag-correlation'];
 
 recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',  'tomette002a10_p_NSD'};
 recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',};
