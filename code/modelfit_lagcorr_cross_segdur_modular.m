@@ -66,8 +66,9 @@ end
 
 %% Model fit
 
-MAT_file = [L.output_directory '/model_fit_' param_string_modelfit '.mat'];
+MAT_file = [L.output_directory filesep 'model_fit_' param_string_modelfit '.mat'];
 if ~exist(MAT_file, 'file') || I.overwrite
+    disp('cache not foud or overwriting. Creating anew')
     
     % proceses in batches of I.batch_size channel to avoid running out of memory
     num_of_batches = ceil(length(L.channels)/I.batch_size);
@@ -319,9 +320,10 @@ if ~exist(MAT_file, 'file') || I.overwrite
     M.chnames = L.chnames;
     M.sr = L.sr;
     
-    save(MAT_file, 'M', '-v7.3');
+    save(MAT_file, 'M');
     
 else
+    disp('loading cache')
     load(MAT_file, 'M')
 end
 

@@ -2,14 +2,10 @@
 
 % 2019-06-16: Created. Mateo Lopez Espejo
 
-% path to data
-root_directory = '/auto/users/mateo/integration_quilt';%
+% path to analysis
 
-% paths for windows machine 
+disp(['root directory: ' root_directory()])
 f = filesep;
-root_directory = ['U:' f 'mateo' f 'integration_quilt']; % VNP
-root_directory = ['C:' f 'Users' f 'mateo' f 'documents' f ...
-    'science' f 'code' f 'integration_quilt']; % local copy
 addpath(genpath([root_directory f 'general-analysis-code']));
 addpath(genpath([root_directory f 'export_fig_v3']));
 addpath(genpath([root_directory f 'helper-functions']));
@@ -43,8 +39,8 @@ files_to_load = files_to_load(1:file_counter);
 
 % loads and parses relevant data
 
-best_fits(200).best_intper_sec = [];
-best_fits(200).best_delay_smp = [];
+best_fits(200).best_intper_ms = [];
+best_fits(200).best_delay_ms = [];
 best_fits(200).chname = [];
 unit_counter = 0 ;
 
@@ -54,8 +50,8 @@ for ff=1:length(files_to_load)
     % iterates over units in site
     for uu = 1:length(M.channels)
         unit_counter = unit_counter + 1;
-        best_fits(unit_counter).best_intper_sec = M.best_delay_smp(uu)/M.sr*1000;
-        best_fits(unit_counter).best_delay_smp = M.best_intper_sec(uu)*1000;
+        best_fits(unit_counter).best_delay_ms = M.best_delay_smp(uu)/M.sr*1000;
+        best_fits(unit_counter).best_intper_ms = M.best_intper_sec(uu)*1000;
         if isfield(M, 'chnames')
             best_fits(unit_counter).chname = M.chnames{M.channels(uu)};
         else
@@ -64,15 +60,18 @@ for ff=1:length(files_to_load)
         end
     end
 end
-
-% defines sites and plotting colors
 best_fits = best_fits(1:unit_counter);
 
+f = filesep;
+filename = [root_directory f 'scrambling-ferrets' f 'analysis' f ...
+            'model_fit_pop_summary'];
+save(filename, 'best_fits')
+
+% defines sites and plotting colors
 sites = struct();
 for rr = 1:length(recording_ids)
     sites.(recording_ids{rr}(1:7)) = rr;
 end 
-
 
 int = zeros(1, length(best_fits));
 lag = zeros(1, length(best_fits));
@@ -80,8 +79,8 @@ cellname = cell(1, length(best_fits));
 color = zeros(1, length(best_fits));
 site = cell(1, length(best_fits));
 for cc = 1:length(best_fits)
-    int(cc) = best_fits(cc).best_intper_sec;
-    lag(cc) = best_fits(cc).best_delay_smp;
+    int(cc) = best_fits(cc).best_intper_ms;
+    lag(cc) = best_fits(cc).best_delay_ms;
     cellname{cc} = best_fits(cc).chname;
     color(cc) = sites.(best_fits(cc).chname(1:7));
     site{cc} = best_fits(cc).chname(1:7);
@@ -94,12 +93,9 @@ gscatter(int, lag, site)
 dx = 0; dy = 0; % displacement so the text does not overlay the data points
 snapnow;
 %text(int+dx, lag+dy, cellname, 'fontsize', 15, 'rotation', -15);
-xlabel('best time Lag (ms)');
-ylabel('best integration (ms)');
-ylim([0, 510]);
+xlabel('best integration (ms)');
+ylabel('best time lag (ms)');
 set(gca, 'YDir','reverse')
-
-
 
 
 % parses into convenient array/structure

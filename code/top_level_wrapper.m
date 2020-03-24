@@ -3,29 +3,21 @@
 % 2018-03-18: Created, Sam NH
 
 % paths to external code repositories
+f = filesep;
 
-root_directory = '/auto/users/mateo/integration_quilt'; % MLE  
-addpath(genpath([root_directory '/general-analysis-code']));
-addpath(genpath([root_directory '/export_fig_v3']));
-addpath(genpath([root_directory '/helper-functions']));
-project_directory = [root_directory '/scrambling-ferrets'];
+disp(['root directoy: ' root_directory()])
+disp( ['data directory: ' data_directory])
 
-% lbhb file reading utilities, hopefully it does not brek pathing
-baphy_set_path
+addpath(genpath([root_directory() f 'general-analysis-code']));
+addpath(genpath([root_directory() f 'export_fig_v3']));
+addpath(genpath([root_directory() f 'helper-functions']));
+project_directory = [root_directory f 'scrambling-ferrets'];
 
-if exist([project_directory '/data'], 'dir')
-    %data_directory = [project_directory '/data']; % SNH
-elseif exist('/auto/data/daq', 'dir')
-    data_directory = '/auto/data/daq';
-    %data_directory = '/auto/data'; % SNH
-else
-    %data_directory = '/Volumes/data'; % SNH
-end
 
 single_unit = true;
 lbhb = true; % uses data from david lab.
-overwrite = true;
-plot_figure = true;
+overwrite = false;
+plot_figure = false;
 save_rasters = false; % saves the rasters for Sam, skips the analysis. 
 
 if single_unit
@@ -56,8 +48,8 @@ recording_directories = cell(1, length(recording_ids));
 for i = 1:length(recording_ids)
     a_code = recording_ids{i}(1:3);
     if lbhb
-        recording_directories{i} = [data_directory '/'...
-                                    animal_codes.(a_code) '/' ...
+        recording_directories{i} = [data_directory f...
+                                    animal_codes.(a_code) f ...
                                     recording_ids{i}(1:6)];
     else
         recording_directories{i} = ['/auto/users/mateo/Sam Analysis/Tomette/' recording_ids{i}(1:10)];
@@ -75,7 +67,7 @@ if plot_figure
         try
             fprintf('%d: %s\n', i, recording_ids{i}); drawnow;
             recording_directory = recording_directories{i};
-            figure_directory = [project_directory '/figures/test-retest'];
+            figure_directory = [project_directory f 'figures' f 'test-retest'];
             rall{i} = reliability(recording_directory, recording_ids{i}, ...
                 'plot', false, 'figure_directory', figure_directory, ...
                 'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);
@@ -92,17 +84,20 @@ if plot_figure
     hist(rvec);
     xlabel('test-retest reliability');
     ylabel('number of single units');
-    export_fig([figure_directory '/hist-allunits-singleunit' num2str(single_unit) '.pdf']);
+    export_fig([figure_directory f 'hist-allunits-singleunit' num2str(single_unit) '.pdf']);
 end
     
 %% Lag analysis
 
 clc;
 for i = 1:length(recording_ids)
+    disp(['working on: ' recording_ids{i}]);
     recording_directory = recording_directories{i};
-    analysis_directory = [project_directory '/analysis/lag-correlation/' recording_ids{i}];
-    raster_directory = [project_directory '/rasters/' recording_ids{i}];
-    figure_directory = [project_directory '/figures/lag-correlation/' recording_ids{i}];
+    analysis_directory = [project_directory f 'analysis' f ...
+                          'lag-correlation' f recording_ids{i}];
+    raster_directory = [project_directory f 'rasters' f recording_ids{i}];
+    figure_directory = [project_directory f 'figures' f ...
+                        'lag-correlation' f recording_ids{i}];
     r = reliability(recording_directory, recording_ids{i}, ...
         'plot', false, 'figure_directory', figure_directory, ...
         'fwhm_ms', 10, 'single_unit', single_unit, 'spike_thresh', 4);

@@ -116,25 +116,28 @@ S.segs(S.segs==31) = 31.25;
 S.segs(S.segs==63) = 62.50;
 
 % ordering of the segments
-S.stim_directory = [root_directory '/scrambling-ferrets/stimuli/naturalsound-v2-whitened-quilt-0.5sec-catmethod2'];
+F = filesep;
+S.stim_directory = [root_directory F 'scrambling-ferrets' F 'stimuli' F ...
+                    'naturalsound-v2-whitened-quilt-0.5sec-catmethod2'];
 for i = 1:length(S.stim_labels)
-    S.segorder(i) = load([S.stim_directory '/' S.stim_labels{i} '.mat']);
+    S.segorder(i) = load([S.stim_directory F S.stim_labels{i} '.mat']);
 end
 
 % additional duration information
 S.scramstim_dur = 10; % total duration of each scrambled stimulus
 S.sourcestim_dur = 0.5; % duration of the source stimuli
 
-%% Perform lag analysis
+%% saves raw rasters
 if I.save_rasters
-    % save some rasters for sam, select only good cells (reliability > 0.1)
+    % select only good cells (reliability > 0.1)
     D = raster_separate_reps(:,:,I.units,:);
     t = tbins' - T.prestim_silence;
     cell_id = chnames(I.units);
     filename = mkpdir(I.raster_directory);
     save(filename, 'D', 't', 'S', 'cell_id');
 else
-
+    %% Perform lag analysis
+    disp([newline 'performig lag analysis'])
     t = tbins' - T.prestim_silence;
     L = lag_corr_cross_segdur_modular(...
         raster_separate_reps, t, S, ...
@@ -148,7 +151,7 @@ else
         'plot_figure', I.plot_figure);
 
     %% Fit lag correlations with model
-
+    disp([newline 'fittig lags with model'])
     M = modelfit_lagcorr_cross_segdur_modular(L, ...
         'overwrite', I.overwrite, 'divnorm', I.divnorm, ...
         'tranweightnsegs', I.tranweightnsegs, 'tranweightdenom', I.tranweightdenom, ...

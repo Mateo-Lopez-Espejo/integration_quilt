@@ -94,7 +94,7 @@ param_string = [...
 if param_string(end)=='_'; param_string = param_string(1:end-1); end
 
 % directory and MAT file to save results to
-MAT_file = mkpdir([I.output_directory '/' param_string '/lagcorr.mat']);
+MAT_file = mkpdir([I.output_directory filesep param_string filesep 'lagcorr.mat']);
 
 % function used to transform correlation
 switch I.trancorr
@@ -119,6 +119,7 @@ switch I.tranweight
 end
 
 if ~exist(MAT_file, 'file') || I.overwrite
+    disp('cache not foud or overwriting. Creating anew')
     
     % segment durations
     clear L;
@@ -410,6 +411,7 @@ if ~exist(MAT_file, 'file') || I.overwrite
     save(MAT_file, 'L');
     
 else
+    disp('loading cache')
     load(MAT_file, 'L');
 end
 
