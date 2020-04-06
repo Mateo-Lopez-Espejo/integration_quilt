@@ -15,9 +15,9 @@ addpath(genpath([root_directory f 'export_fig_v3']));
 results_dir = [root_directory f 'scrambling-ferrets' f 'analysis' ...
                f 'lag-correlation'];
 
-recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',  'tomette002a10_p_NSD'};
-recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI', 'AMT032a11_p_NTI',};
-
+recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI',...
+            'AMT031a13_p_NTI', 'AMT032a11_p_NTI', ...
+            'DRX008b14_p_NTI', 'DRX021a19_p_NTI'};
 
 % finds and lists the directory of and site of relevant sites
 all_analysis_files = subdir(results_dir);

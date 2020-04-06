@@ -477,8 +477,12 @@ if I.plot_figure
         filename = mkpdir([L.figure_directory '/' chname ...
         '-win' num2str(I.plot_win(1)) '-' num2str(I.plot_win(2)) ...
         '-range' num2str(corr_range(1), '%.2f') '-' num2str(corr_range(2), '%.2f') '.pdf']);    
-
-        export_fig(filename, '-pdf', '-transparent');
+         fname = mkpdir([L.figure_directory '/' chname ...
+        '-win' num2str(I.plot_win(1)) '-' num2str(I.plot_win(2)) ...
+        '-range' num2str(corr_range(1), '%.2f') '-' num2str(corr_range(2), '%.2f')]);    
+    
+        print_wrapper([fname '.png']);
+        %export_fig(filename, '-png', '-transparent');
         
     end
 end

@@ -89,6 +89,68 @@ end
 %% Separate out repetitions into a separate dimension
 
 n_conditions = T.n_seg * T.n_orders * T.n_stims;
+% check where some combination of order and segment length 
+% have less repetitions and breake the code therefore....
+if mod(T.n_trials, n_conditions) ~= 0
+    % chekc allpossible conditions, i.e, combinations of segment duration and order
+    conditions = struct;
+    c_count = 1;
+    for o = 1:length(T.unique_orders)
+        for s = 1:length(T.unique_segs)
+            for st = 1:length(T.unique_stims)
+                ord = T.unique_orders(o);
+                seg = T.unique_segs(s);
+                stm = T.unique_stims(st);
+                conditions(c_count).orders = ord;
+                conditions(c_count).segs = seg;
+                conditions(c_count).stims = stm;
+                mask = and(and(T.segs == seg, T.orders == ord), T.stims == stm);
+                conditions(c_count).count = sum(mask);
+                c_count = c_count + 1;
+            end
+        end
+    end
+    % minimum number of repetitions given all different contidiont 
+    min_reps = min([conditions.count]);
+    
+    % get the extra trials of some conditions to get all the the min number
+    extra_trials = [];
+    for e = 1:length(conditions)
+        if conditions(e).count > min_reps
+            condition = and(and(T.orders == conditions(e).orders,...
+                                T.segs == conditions(e).segs),...
+                                T.stims == conditions(e).stims);
+            cond_trial = T.trial_order(condition);
+            extra_trials = [extra_trials, cond_trial(min_reps+1:end)];
+        end
+    end
+    
+    % excludes extra trials and recout trial number
+    good_trials = ~ismember(T.trial_order,extra_trials);
+    T.n_trials = length(good_trials);
+    
+    [~, T.trial_order] = sort(T.trial_order(good_trials));
+    T.segs = T.segs(good_trials);
+    T.orders = T.orders(good_trials);
+    T.stims = T.stims(good_trials);
+    T.stim_labels = T.stim_labels(good_trials);
+    raster_smooth =  raster_smooth(:, good_trials, :);
+    
+    % sorts the trialse so when reshaping dimensions make sense...
+    tosort = [T.segs; T.orders; T.stims];
+    [~, sortidx] = sortrows(tosort', [1,2,3]);
+    
+    T.trial_order = T.trial_order(sortidx);
+    T.segs = T.segs(sortidx);
+    T.orders = T.orders(sortidx);
+    T.stims = T.stims(sortidx);
+    T.stim_labels = T.stim_labels(sortidx);
+    raster_smooth =  raster_smooth(:, sortidx, :);
+    
+    T.n_trials = length(T.trial_order);
+
+end
+
 n_reps_total = T.n_trials/n_conditions;
 
 % separate out different trials, permute dims

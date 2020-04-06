@@ -20,7 +20,7 @@ I.tranweightdenom = 'none'; % applied to denominator
 I.forcecausal = false;
 I.bestcausal = true; % select only amongst causal solutions (not relevant for Gausssian)
 I.plotcausal = true; % only plot errors for causal solutions
-I.batch_size = 25;
+I.batch_size = 10;
 switch I.distr
     case 'gauss'
         I.shape = 1;
@@ -383,7 +383,7 @@ if I.plot_figure
         end
         fname = [L.figure_directory '/' chname '-model-prediction-lineplot_' param_string_modelfit '_plotwin' plot_win_string];
         print_wrapper([fname '.png']);
-        print_wrapper([fname '.pdf']);
+        %print_wrapper([fname '.pdf']);
         
         % plot prediction for best delay, image
         clf(figh);

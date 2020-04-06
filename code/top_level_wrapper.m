@@ -17,15 +17,17 @@ project_directory = [root_directory f 'scrambling-ferrets'];
 single_unit = true;
 lbhb = true; % uses data from david lab.
 overwrite = false;
-plot_figure = false;
+plot_figure = true;
 save_rasters = false; % saves the rasters for Sam, skips the analysis. 
 
 if single_unit
     if lbhb
         recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI',...
-            'AMT032a11_p_NTI', 'DRX021a19_p_NTI'};
-        
-        % to sort: 'AMT029a16_p_NTI', AMT030a12_p_NTI, , 'DRX008b14_p_NTI'
+            'AMT031a13_p_NTI', 'AMT032a11_p_NTI', ...
+            'DRX008b14_p_NTI', 'DRX021a19_p_NTI'};
+        %recording_ids = {'DRX021a19_p_NTI'};
+        %recording_ids = {'AMT026a14_p_NTI'};
+        % to sort: 'AMT029a16_p_NTI', AMT030a12_p_NTI, ,
         % 'DRX010c05_p_NTI', 'DRX023a22_p_NTI'
     else 
         recording_ids = {'tomette002a10_p_NSD'};
@@ -84,7 +86,10 @@ if plot_figure
     hist(rvec);
     xlabel('test-retest reliability');
     ylabel('number of single units');
-    export_fig([figure_directory f 'hist-allunits-singleunit' num2str(single_unit) '.pdf']);
+    filename = [figure_directory f 'hist-allunits-singleunit' num2str(single_unit) '.pdf'];
+    fname = [figure_directory f 'hist-allunits-singleunit' num2str(single_unit)];
+    %export_fig(filename);
+    print_wrapper([fname '.png']);
 end
     
 %% Lag analysis
