@@ -49,6 +49,7 @@ end
 % asigns full animal name to the animal code 
 animal_codes.AMT = 'Amanita';
 animal_codes.DRX = 'Drechsler';
+animal_codes.CRD = 'Cordyceps';
 
 recording_directories = cell(1, length(recording_ids));
 
