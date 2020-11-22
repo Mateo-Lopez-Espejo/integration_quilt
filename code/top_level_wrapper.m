@@ -24,17 +24,16 @@ end
 
 single_unit = true;
 lbhb = true; % uses data from david lab.
-overwrite = true;
-plot_figure = true;
+overwrite = false;
+plot_figure = false;
 save_rasters = false; % saves the rasters for Sam, skips the analysis. 
 
 if single_unit
     if lbhb
-        recording_ids = {'AMT026a14_p_NTI', 'AMT028b05_p_NTI',...
-            'AMT032a11_p_NTI', 'DRX021a19_p_NTI'};
-        
-        % to sort: 'AMT029a16_p_NTI', AMT030a12_p_NTI, , 'DRX008b14_p_NTI'
-        % 'DRX010c05_p_NTI', 'DRX023a22_p_NTI'
+        recording_ids = {'AMT028b05_p_NTI', 'AMT031a13_p_NTI', 'AMT032a11_p_NTI'...
+                         'AMT026a14_p_NTI', 'CRD002a16_p_NTI', 'CRD003b14_p_NTI'...
+                         'CRD004a14_p_NTI', 'DRX008b14_p_NTI', 'DRX021a19_p_NTI'...
+                         'DRX023a22_p_NTI'};
     else 
         recording_ids = {'tomette002a10_p_NSD'};
     end
