@@ -128,10 +128,11 @@ S.sourcestim_dur = 0.5; % duration of the source stimuli
 %% Perform lag analysis
 if I.save_rasters
     % save some rasters for sam, select only good cells (reliability > 0.1)
+    filename = mkpdir(I.raster_directory);
+    disp(strcat('saving rasters to ', filename))    
     D = raster_separate_reps(:,:,I.units,:);
     t = tbins' - T.prestim_silence;
     cell_id = chnames(I.units);
-    filename = mkpdir(I.raster_directory);
     save(filename, 'D', 't', 'S', 'cell_id');
 else
 
